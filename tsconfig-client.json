@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES5",
+    "module": "ES2015",
+    "moduleResolution": "node",
+    "outDir": "./build/client/",
+    "noEmitOnError": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationDir":"./dist/"
+  },
+  "exclude": [
+    "node_modules",
+    ".npm"
+  ],
+  "include": [
+        "src/client/**/*.ts"
+ ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "towncrier",
+  "version": "0.1.0",
+  "description": "Multiplayer library for node and browser",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tsc-client": "tsc -p tsconfig-client.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trymnilsen/towncrier.git"
+  },
+  "keywords": [
+    "realtime",
+    "lockstep",
+    "multiplayer",
+    "turnbased",
+    "prediction",
+    "websocket",
+    "webrtc"
+  ],
+  "author": "Trym Nilsen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/trymnilsen/towncrier/issues"
+  },
+  "homepage": "https://github.com/trymnilsen/towncrier#readme",
+  "devDependencies": {
+    "rollup": "^0.43.0",
+    "typescript": "^2.3.4"
+  }
+}
