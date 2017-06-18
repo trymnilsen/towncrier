@@ -29,5 +29,9 @@
   "devDependencies": {
     "rollup": "^0.43.0",
     "typescript": "^2.3.4"
+  },
+  "dependencies": {
+    "@types/ws": "^3.0.0",
+    "ws": "^3.0.0"
   }
 }
