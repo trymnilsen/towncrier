@@ -1,45 +1,53 @@
-import { ServerOptions } from './ServerOptions';
+import { ServerOptions } from '../lib/ServerOptions';
 import { Client } from './client';
 import { EpochMessageHandler } from './epochMessageHandler';
 import { ImmediateMessageHandler } from './immediateMessageHandler';
-import * as WS from 'ws';
 import { ClientID } from './clientId';
 import { MessageHandler } from './messageHandler';
+import * as WS from 'ws';
+import { ClientConnectMessage } from '../lib/clientConnectMessage';
+import { GameWorld } from './gameworld';
+import { Codec } from '../lib/codec';
+
 export class Server {
     private connectedClients: Client[];
     private server: WS.Server;
-    private port:number;
+    private options: ServerOptions;
     private messageHandler: MessageHandler;
-
+    private gameworld: GameWorld;
+    private codec: Codec;
     public onMessage: (message: object) => void;
     public onClientConnect: (client: Client) => void;
     public onValidateConnection: (connection: any) => boolean;
 
     public constructor(opts: ServerOptions) {
-        
+        this.options = opts;
+
         this.server = new WS.Server({
             port: opts.port,
             verifyClient: this.onValidateConnection.bind(this) 
         });
 
-        this.server.on("connection",(socket)=> {
+        this.server.on("connection",async (socket)=> {
             let clientId = ClientID.getNewId();
             let client = new Client(clientId, socket);
             this.connectedClients.push(client);
             //Negotiate connection
-            this.negotiateConnection(client);
+            await this.negotiateConnection(client);
 
-            socket.on("message",(data: WS.Data) => {
-                this.onWSMessage(data,client);
-            });
+            socket.onmessage = (message) => {
+                let unWrappedData = this.codec.Decode(message.data);
+                this.messageHandler.onMessage(unWrappedData, client);
+            };
 
-            socket.on("error", (error: Error) => {
-                this.onWSError(error, client);
-            });
+            socket.onclose = (closeEvent)=> {
+                this.onWSClose(closeEvent, clientId);
+            };
 
-            socket.on("close",(code: number,message: string) => {
-                this.onWSClose(code,message,clientId);
-            });
+            socket.onerror = (data) => {
+                this.onWSError(data, client);
+            };
+
         });
         
         if(opts.updateMode != "Epoch" && !opts.epochTickRate) {
@@ -53,17 +61,32 @@ export class Server {
             this.connectedClients[i].Send(data);
         }
     }
-    private onWSMessage(data: any, client: Client) {
-        //ToDo some unwrapping logic
-        this.messageHandler.onMessage(data,client);
-    }
-    private onWSClose(code: number, message: string, clientId: string) {
+    private onWSClose(closeEvent: {wasClean :boolean; code:number; reason:string;}, clientId: string) {
 
     }
     private onWSError(error: Error, client: Client) {
         
     }
-    private negotiateConnection(client: Client) {
-        
+    private async negotiateConnection(client: Client): Promise<void> {
+        return new Promise<void>((resolve, error) => {
+            let connectMessage: ClientConnectMessage = {
+                clientId: client.clientId,
+                connectedClients: this.gameworld.players,
+                serverOptions: this.options
+            };
+            //Set up listener to await confirm
+            client.socket.onmessage = (message)=> {
+                if(message.data === client.clientId) {
+                    client.socket.onmessage = null;
+                    //Remove listener
+                    resolve();
+                } else {
+                    client.socket.onmessage = null;
+                    error("Client confirmed with incorrect ID");
+                }
+            };
+            //Send the client message
+            client.socket.send(connectMessage,error);
+        });
     }
 }
